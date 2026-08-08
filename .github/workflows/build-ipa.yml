@@ -11,36 +11,47 @@ jobs:
       - name: Checkout Repository at v1.0.0
         uses: actions/checkout@v4
         with:
-          ref: v1.0.0  # 👈 关键点：这里强行指定拉取 v1.0.0 版本代码
+          repository: 'appium/WebDriverAgent'
+          ref: 'v1.0.0'
+          fetch-depth: 0
 
       - name: Select Xcode Version
         run: |
           sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
           xcodebuild -version
 
-      - name: Build WebDriverAgentRunner
+      - name: Build WebDriverAgentRunner (Fix iOS Target)
         run: |
+          # 通过命令行直接修改 Deployment Target 为 12.0，并忽略过时 API 警告
           xcodebuild build-for-testing \
             -project WebDriverAgent.xcodeproj \
             -scheme WebDriverAgentRunner \
             -destination 'generic/platform=iOS' \
             -configuration Release \
             -derivedDataPath build/DerivedData \
+            IPHONEOS_DEPLOYMENT_TARGET=12.0 \
+            GCC_TREAT_WARNINGS_AS_ERRORS=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO
 
       - name: Package to IPA
         run: |
-          # 1. 精确定位编译生成的 Runner.app 路径
+          # 1. 查找生成的 Runner.app
           APP_PATH=$(find build/DerivedData -name "WebDriverAgentRunner-Runner.app" -type d | head -n 1)
-          echo "Found APP at: $APP_PATH"
-          
-          # 2. 创建标准 Payload 结构并打包
+          echo "Found App at: $APP_PATH"
+
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: Could not find WebDriverAgentRunner-Runner.app"
+            exit 1
+          fi
+
+          # 2. 组装 Payload 结构并打包
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
           zip -r WebDriverAgentRunner.ipa Payload
-          
-          echo "IPA 打包完成！"
+
+          echo "IPA 打包成功！"
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
