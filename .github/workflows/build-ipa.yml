@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-13
 
     steps:
       - name: Checkout Repository at v4.5.1
@@ -18,7 +18,7 @@ jobs:
 
       - name: Select Xcode Version
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer
           xcodebuild -version
 
       - name: Build WebDriverAgentRunner
