@@ -1,4 +1,4 @@
-name: Build iOS-Tagent IPA for iOS 12
+name: Build WDA v4.10.0 for iOS 12
 
 on:
   workflow_dispatch:
@@ -8,10 +8,11 @@ jobs:
     runs-on: macos-14
 
     steps:
-      - name: Checkout iOS-Tagent
+      - name: Checkout Appium WDA v4.10.0
         uses: actions/checkout@v4
         with:
-          repository: 'AirtestProject/iOS-Tagent' # 直接拉取网易官方 iOS-Tagent 源码
+          repository: 'appium/WebDriverAgent'
+          ref: 'v4.10.0' # 👈 专门针对 iOS 12 最稳定的 Appium WDA 版本
           fetch-depth: 0
 
       - name: Select Xcode Version
@@ -21,7 +22,6 @@ jobs:
 
       - name: Build WebDriverAgentRunner
         run: |
-          # 强行设置最低部署目标为 iOS 12.0，并忽略过时 API 警告
           xcodebuild build-for-testing \
             -project WebDriverAgent.xcodeproj \
             -scheme WebDriverAgentRunner \
@@ -36,24 +36,18 @@ jobs:
 
       - name: Package to IPA
         run: |
-          # 1. 查找编译生成的 Runner.app
           APP_PATH=$(find build/DerivedData -name "WebDriverAgentRunner-Runner.app" -type d | head -n 1)
           echo "Found App at: $APP_PATH"
 
-          if [ -z "$APP_PATH" ]; then
-            echo "Error: Could not find WebDriverAgentRunner-Runner.app"
-            exit 1
-          fi
+          # 强制指定支持 iOS 12.0
+          plutil -replace MinimumOSVersion -string "12.0" "$APP_PATH/Info.plist"
 
-          # 2. 打包成标准 IPA 文件
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
-          zip -r iOS-Tagent-Runner.ipa Payload
-
-          echo "IPA 打包完成！"
+          zip -r WDA-v4.10.0-Runner.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: iOS-Tagent-Runner-Unsigned
-          path: iOS-Tagent-Runner.ipa
+          name: WDA-v4.10.0-Runner
+          path: WDA-v4.10.0-Runner.ipa
