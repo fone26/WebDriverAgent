@@ -1,29 +1,27 @@
-name: Build WebDriverAgent IPA for iOS 12 (v4.5.1)
+name: Build iOS-Tagent IPA for iOS 12
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-14
 
     steps:
-      - name: Checkout Repository at v4.5.1
+      - name: Checkout iOS-Tagent
         uses: actions/checkout@v4
         with:
-          repository: 'fone26/WebDriverAgent' # 你的仓库地址
-          ref: 'v4.5.1'                        # 指定检出 v4.5.1 Tag/分支
-          submodules: 'recursive'              # 递归拉取子模块（防止缺失依赖）
+          repository: 'AirtestProject/iOS-Tagent' # 直接拉取网易官方 iOS-Tagent 源码
           fetch-depth: 0
 
       - name: Select Xcode Version
         run: |
-          sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
           xcodebuild -version
 
       - name: Build WebDriverAgentRunner
         run: |
-          # 强行指定支持 iOS 12.0 并禁用警告转错误
+          # 强行设置最低部署目标为 iOS 12.0，并忽略过时 API 警告
           xcodebuild build-for-testing \
             -project WebDriverAgent.xcodeproj \
             -scheme WebDriverAgentRunner \
@@ -47,15 +45,15 @@ jobs:
             exit 1
           fi
 
-          # 2. 构建标准 Payload 压缩结构
+          # 2. 打包成标准 IPA 文件
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
-          zip -r WebDriverAgentRunner.ipa Payload
+          zip -r iOS-Tagent-Runner.ipa Payload
 
           echo "IPA 打包完成！"
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WebDriverAgentRunner-v4.5.1-Unsigned
-          path: WebDriverAgentRunner.ipa
+          name: iOS-Tagent-Runner-Unsigned
+          path: iOS-Tagent-Runner.ipa
